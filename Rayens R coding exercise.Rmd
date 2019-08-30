@@ -1,0 +1,146 @@
+---
+title: "Emily Rayens Coding Exercise 1"
+output:
+  html_document:
+    df_print: paged
+---
+
+I first pulled up the gapminder dataset from dslabs using the library() and help() functions.
+
+```{r}
+library("dslabs")
+data(gapminder)
+help(gapminder)
+```
+
+
+
+To get a good look at my data, I then used the str() and summary() functions for structure and summary. 
+
+```{r}
+str(gapminder)
+summary(gapminder)
+```
+
+I then used the class() function to check what type of object gapminder is. 
+```{r}
+class(gapminder)
+```
+From this output, we can see it is a data.frame object.
+
+At this point, we want to work with our data, starting by assigning  only the African countries to a new object called africadata. We can do this by selecting the rows with the the continent set as "Africa". In order to assess the success of this selection, I ran a new structure and summary assessment of the object. 
+
+```{r}
+africadata <- subset(gapminder, continent == "Africa")
+str(africadata)
+summary(africadata)
+```
+As this output has the anticpated 2907 observations (down from 10545), we can assume that the subset has been correctly generated. 
+
+
+
+Now that we've had a practice round, we want to create more complex variables, 
+starting with "death" which will contain the infant_mortality and life_expectancy subsets from africa data. In order to achieve this, we will use the c() function within that subset selection we used in filtering out the African countries. And as before, we will check the accuracy of the variable generation by its structure and summary. 
+
+```{r}
+death <- subset(africadata, select = c(infant_mortality, life_expectancy))
+str(death)
+summary(death)
+```
+
+
+We will repeat this by creating a "life" object that contains population and life_expectancy. 
+```{r}
+life <- subset(africadata, select = c(population, life_expectancy))
+str(life)
+summary(life)
+```
+
+
+At this point, we want to graph our new variables and see if we can visualize any relationships between them. We will have two plots in total (as we created new "death" and "life" object), starting with life expectancy as a function of infant mortality, which will place infant mortality on the x axis and life expectancy on the y axis. 
+
+```{r}
+plot(death$infant_mortality, death$life_expectancy,
+    xlab= "Infant Mortality (per 1000 births)", ylab="Life Expectancy (years)",
+    main="Infant Mortality and Life Expectancy in Africa")
+```
+
+
+
+From here, we can see that as infant mortality increases, the overall life expectancy decreases, meaning there is a negative correlation between these two variables. 
+
+
+
+We will now graph the "death" object with life expectancy as a function of population size, which will place population size on the x axis and life expectancy on the y axis. Due to the variability and size of values for population size, it will help us to adjust the x axis to a log scale. 
+
+```{r}
+plot(log(life$population, 10), y = life$life_expectancy, 
+     xlab="Population Size (Log10)", ylab="Life Expectancy (years)",
+     main = "Population Size and Life Expectancy in Africa")
+```
+
+
+This plot ends up looking quite a bit different as there are many individual lines of association. However, all these show a positive correlation between the variables, meaning as population size increases, life expectancy increases. We can look back at the death plot and see these individual lines of association (however, they overlap to a greater degree). These individual associations most likely represent sampling within single regions or countries, distinct by a number of different factors but with the positive correlation in population size and life expectancy remaining the same. 
+
+
+
+
+
+
+As we can see the change in individual countries and these countries increase in population size (and life expectancy), we want to look within a single year to look for pattterns. To help us make the most applicable conclusions, we want to select the largest possible data set within a single year and the best way to start narrowing this down is by removing incomplete data sets for infant mortality. 
+
+To do this, we need to organize which years are missing data and we can do this by generating a table that displays the years and their corresponding midding infant mortality data. 
+
+```{r}
+table(as.factor(africadata$year), is.na(africadata$infant_mortality),
+      dnn = c("year", "Missing infant mortality"))
+```
+
+
+From here, we can see that there are a number of years without missing values, including the year 2000. To look for patterns, we will extracting on the data from the year 2000 by creating a new Year2000 subset. 
+
+```{r}
+Year2000 <- subset(africadata, year =="2000")
+str(Year2000)
+summary(Year2000)
+```
+
+With the structure and summary, we can see that there are only 51 observations and 9 variables in this Year2000 subset. And now that we've specified this dataset, we can plot this smaller population with the same comparisons as we set previously. 
+
+
+```{r}
+plot(Year2000$infant_mortality, Year2000$life_expectancy,
+     xlab = "Infant Mortality (per 1000 births)", ylab = "Life Expectancy (years)", 
+     main = "Infant Mortality and Life Expectancy in 2000")
+```
+
+
+We can see that overall the same negative correlation is maintained between life expectancy and infant mortality. 
+
+```{r}
+plot(log(Year2000$population), Year2000$life_expectancy,
+     xlab = "Population Size (log10)", ylab = "Life Expectancy (years)", 
+     main = "Population Size and Life Expectancy in 2000")
+```
+
+Unlike we saw in the plot inclusing all African countries, it is not clear there is a correlation between these variables. This is where statistics to determine a non-random relationship comes into play. We will first look at the relationship between life expectancy and infant mortality. 
+
+```{r}
+fit1 <- lm(Year2000$life_expectancy ~ Year2000$infant_mortality)
+summary(fit1)
+```
+
+With a p-value <0.01, we can reject the null hypothesis that there is no relationship between life expectancy and infant mortality (F=43.48, d.f.=1,49, p=2.826e-08). The negative correlation is confrimed with a slope of -0.18916 which means for every year increase in life expectancy, we expect a decrease of 0.18916 in infant mortality per 1000 births. 
+
+
+
+
+To examine the realtionship between life expectancy and population in the year 2000, I am going to examine with population both in and out of the log format to look for differences. 
+```{r}
+fit2 <- lm(Year2000$life_expectancy ~ Year2000$population)
+fit3 <- lm(Year2000$life_expectancy ~ log(Year2000$population, 10))
+summary(fit2)
+summary(fit3)
+```
+
+While we can see that analyzing the correlation in log form improves the p-value (from p=0.616 to 0.4755), we cannot reject the null hypothesis that there is no significant relationship between life expectancy and population size (F=0.517, d.f.=1,49, p=0.4755). 

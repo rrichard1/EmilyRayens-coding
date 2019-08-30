@@ -1,1 +1,1 @@
-# EmilyRayens-coding
+Emily Rayens first R coding exercise for Module 3. 
